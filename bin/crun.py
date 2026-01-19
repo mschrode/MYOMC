@@ -75,6 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--mem", type=int, default=7900, help="Memory to request")
     parser.add_argument("--max_nthreads", type=int, default=8, help="Maximum number of threads (reduce if condor priority is a problem)")
     parser.add_argument("--overwrite", "-f", action="store_true", help="Force overwrite outputs")
+    parser.add_argument("--job_flavour", type=str, default="longlunch", help="JobFlavour option (espresso=20min, microcentury=1hr, longlunch=2hr, workday=8hr, tomorrow=1day, testmatch=3day, nextweek=1week")
     args = parser.parse_args()
 
     # Campaign check
@@ -296,7 +297,7 @@ done
         files_to_transfer.append(f"{MYOMCPATH}/campaigns/{args.campaign}/pileupinput.dat")
     if args.env:
         files_to_transfer.append(f"{MYOMCPATH}/campaigns/{args.campaign}/env.tar.gz")
-    csub_command = f"csub runwrapper.sh -t tomorrow \
+    csub_command = f"csub runwrapper.sh -t {args.job_flavour} \
 --mem {args.mem} \
 --nThreads {args.max_nthreads} \
 -F {','.join(files_to_transfer)} \
@@ -307,3 +308,4 @@ done
     os.system(csub_command)
 
     os.chdir(cwd)
+    
