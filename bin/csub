@@ -236,14 +236,16 @@ submission_file.write("+JobFlavour = \"{}\"\n".format(args.time_limit))
 if args.transfer_output:
     submission_file.write("transfer_output_files = " + args.transfer_output + "\n")
 
+# let all jobs of one submission write to single log file
+# having one log file per job is discouraged (soon not supported) by lxplus
 if args.log:
-    log_stdout = args.log + ".$(Cluster).$(Process).stdout"
-    log_stderr = args.log + ".$(Cluster).$(Process).stderr"
-    log_condor = args.log + ".$(Cluster).$(Process).condor"
+    log_stdout = args.log + ".$(Cluster).stdout"
+    log_stderr = args.log + ".$(Cluster).stderr"
+    log_condor = args.log + ".$(Cluster).condor"
 else:
-    log_stdout = "log_" + timestamp + "_$(Cluster).$(Process).stdout"
-    log_stderr = "log_" + timestamp + "_$(Cluster).$(Process).stderr"
-    log_condor = "log_" + timestamp + "_$(Cluster).$(Process).condor"
+    log_stdout = "log_" + timestamp + "_$(Cluster).stdout"
+    log_stderr = "log_" + timestamp + "_$(Cluster).stderr"
+    log_condor = "log_" + timestamp + "_$(Cluster).condor"
 
 submission_file.write(f"""
 output = {log_stdout}
