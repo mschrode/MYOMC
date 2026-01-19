@@ -2,7 +2,7 @@
 if [ -z ${MYOMCPATH+x} ]; then
 	source $PWD/env.sh
 fi
-# voms-proxy-init -voms cms
+voms-proxy-init -rfc --voms cms --valid 72:00:00
 TOPDIR=$PWD
 #CAMPAIGNS=( "RunIIFall18GS" "RunIIFall18GSBParking" "RunIIFall18wmLHEGS" )
 # CAMPAIGNS=( "RunIISummer20UL16wmLHE" "RunIISummer20UL16APVwmLHE" "RunIISummer20UL17wmLHE" "RunIISummer20UL18wmLHE" "NANOGEN" )
