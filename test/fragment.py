@@ -1,73 +1,54 @@
 import FWCore.ParameterSet.Config as cms
 
+externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
+    args = cms.vstring('/cvmfs/cms.cern.ch/phys_generator/gridpacks/RunIII/13p6TeV/slc7_amd64_gcc10/MadGraph5_aMCatNLO/GF_HHH_c3_0_d4_0_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz'),
+    nEvents = cms.untracked.uint32(5000),
+    generateConcurrently = cms.untracked.bool(False),
+    numberOfParameters = cms.uint32(1),
+    outputFile = cms.string('cmsgrid_final.lhe'),
+    scriptName = cms.FileInPath('GeneratorInterface/LHEInterface/data/run_generic_tarball_cvmfs.sh')
+)
+
+#Link to datacards:
+#https://github.com/cms-sw/genproductions/tree/master/bin/MadGraph5_aMCatNLO/cards/production/13p6TeV/Higgs/GF_HHH/GF_HHH_c3_0_d4_0
+
+import FWCore.ParameterSet.Config as cms
 from Configuration.Generator.Pythia8CommonSettings_cfi import *
-from Configuration.Generator.MCTunes2017.PythiaCP5Settings_cfi import *
+from Configuration.Generator.MCTunesRun3ECM13p6TeV.PythiaCP5Settings_cfi import *
+from Configuration.Generator.PSweightsPythia.PythiaPSweightsSettings_cfi import *
 
 generator = cms.EDFilter(
-    "Pythia8GeneratorFilter",
-    pythiaHepMCVerbosity = cms.untracked.bool(False),
-    maxEventsToPrint = cms.untracked.int32(0),
-    pythiaPylistVerbosity = cms.untracked.int32(0),
-    filterEfficiency = cms.untracked.double(2.930e-02),
-    crossSection = cms.untracked.double(540000000.),
-    comEnergy = cms.double(13000.0),
-    ExternalDecays = cms.PSet(
-        EvtGen130 = cms.untracked.PSet(
-            decay_table = cms.string('GeneratorInterface/EvtGenInterface/data/DECAY_2014_NOLONGLIFE.DEC'),
-            particle_property_file = cms.FileInPath('GeneratorInterface/EvtGenInterface/data/evt_2014.pdl'),
-            user_decay_file = cms.vstring('GeneratorInterface/EvtGenInterface/data/Bu_JpsiPi.dec'),
-            list_forced_decays = cms.vstring('MyB+', 'MyB-'),
-            operates_on_particles = cms.vint32(),
-            convertPythiaCodes = cms.untracked.bool(False),
-        ),
-        parameterSets = cms.vstring('EvtGen130')
-    ),
-    PythiaParameters = cms.PSet(
+    "Pythia8ConcurrentHadronizerFilter",
+                         maxEventsToPrint = cms.untracked.int32(1),
+                         pythiaPylistVerbosity = cms.untracked.int32(1),
+                         filterEfficiency = cms.untracked.double(1.0),
+                         pythiaHepMCVerbosity = cms.untracked.bool(False),
+                         comEnergy = cms.double(13600.),
+                         PythiaParameters = cms.PSet(
         pythia8CommonSettingsBlock,
         pythia8CP5SettingsBlock,
+        pythia8PSweightsSettingsBlock,
         processParameters = cms.vstring(
-            "SoftQCD:nonDiffractive = on",
-            'PTFilter:filter = on', # this turn on the filter
-            'PTFilter:quarkToFilter = 5', # PDG id of q quark
-            'PTFilter:scaleToFilter = 1.0'),
-        parameterSets = cms.vstring(
-            'pythia8CommonSettings',
-            'pythia8CP5Settings',
-            'processParameters',
+            '24:mMin = 0.05',
+            '24:onMode = on',
+            '25:m0 = 125.0',
+            '25:onMode = off',
+            '25:onIfMatch = 5 -5',
+            '25:onIfMatch = 24 -24',
+            'ResonanceDecayFilter:filter = on',
+            'ResonanceDecayFilter:exclusive = on', #on: require exactly the specified number of daughters
+            'ResonanceDecayFilter:eMuTauAsEquivalent = on', #on: treat electrons, muons , and taus as equivalent
+            'ResonanceDecayFilter:allNuAsEquivalent = on', #on: treat all three neutrino flavours as equivalent
+            'ResonanceDecayFilter:udscAsEquivalent = on', #on: treat udsc quarks as equivalent
+            'ResonanceDecayFilter:mothers = 24,25',
+            'ResonanceDecayFilter:daughters = 5,5,5,5,11,12,11,12',
+          ),
+        parameterSets = cms.vstring('pythia8CommonSettings',
+                                    'pythia8CP5Settings',
+                                    'pythia8PSweightsSettings',
+                                    'processParameters'
+                                    )
         )
-    )
-)
+                         )
 
-bfilter = cms.EDFilter(
-    "PythiaFilter",
-    MaxEta = cms.untracked.double(9999.),
-    MinEta = cms.untracked.double(-9999.),
-    ParticleID = cms.untracked.int32(521)
-)
-
-jpsifilter = cms.EDFilter(
-    "PythiaDauVFilter",
-    MotherID = cms.untracked.int32(521),
-    ParticleID = cms.untracked.int32(443),
-    NumberDaughters = cms.untracked.int32(2),
-    DaughterIDs = cms.untracked.vint32(13, -13),
-    MinPt = cms.untracked.vdouble(1., 1.),
-    MinEta = cms.untracked.vdouble(-3., -3.),
-    MaxEta = cms.untracked.vdouble(3., 3.),
-    verbose = cms.untracked.int32(0)
-)
-
-pifilter = cms.EDFilter(
-    "PythiaDauVFilter",
-    MotherID = cms.untracked.int32(0),
-    ParticleID = cms.untracked.int32(521),
-    NumberDaughters = cms.untracked.int32(2),
-    DaughterIDs = cms.untracked.vint32(443, 211),
-    MinPt = cms.untracked.vdouble(-99., 0.3),
-    MinEta = cms.untracked.vdouble(-9999., -3.),
-    MaxEta = cms.untracked.vdouble(9999., 3.),
-    verbose = cms.untracked.int32(0)
-)
-
-
-ProductionFilterSequence = cms.Sequence(generator*bfilter*jpsifilter*pifilter)
+ProductionFilterSequence = cms.Sequence(generator)
