@@ -1,6 +1,6 @@
 # Make your own MC
 
-This repository proves scripts to run private MC generation. It consists of the exact same cmsDriver.py commands used in central production (...painstaking copied by hand from MCM). It is a fork from [gabhijith's fork](https://github.com/gabhijith/MYOMC) of [DryRun's MYOMC](https://github.com/DryRun/MYOMC).
+This repository provides scripts to run private MC generation. It consists of the exact same cmsDriver.py commands used in central production (...painstaking copied by hand from MCM). It is a fork from [gabhijith's fork](https://github.com/gabhijith/MYOMC) of [DryRun's MYOMC](https://github.com/DryRun/MYOMC).
 
 Setup instructions:
 ```
