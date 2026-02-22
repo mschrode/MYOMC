@@ -24,10 +24,10 @@ def create_project_dir(cfg: dict):
     topdir = os.environ.get("MYOMCPATH")
     cfg["topdir"] = Path(topdir)
 
-    # Create project directory TOPDIR/SAMPLES/NAME
+    # Create project directory TOPDIR/SAMPLES/SAMPLE
     projectdir = Path(f"{topdir}/samples")
     projectdir.mkdir(parents=True, exist_ok=True)
-    projectdir = projectdir/cfg["name"]
+    projectdir = projectdir/cfg["sample"]
     if projectdir.exists():
         raise FileExistsError(
             f"\nProject directory already exists: {projectdir}\nAborting"
@@ -36,28 +36,7 @@ def create_project_dir(cfg: dict):
     cfg["projectdir"] = projectdir
     
 
-def init(args: argparse.Namespace) -> dict:
-
-    if args.config:
-        # load config file
-        with open(Path(args.config), "r") as f:
-            cfg = yaml.safe_load(f)
-    else:
-        # use default config
-        cfg = {
-            "name": args.sample,
-            "campaign": "Run3Summer24wmLHEGS",
-            "nevents": 10000,
-            "nevents_job": 500,
-            "njobs_chunk": 1000,
-            "mem": 1250,
-            "job_flavour": "workday",
-            "gridpack_placeholder_str": "GRIDPACK",
-            #"gridpack": "/eos/user/m/mschrode/mcproduction/gridpacks/Run3/AToZHToQQTTbarDL/AToZHToQQTTbarDL_MA-1000_MH-600_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz",
-            "gridpack": "/afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz",
-            "fragment_lhe_producer": "fragments/fragment_lhe_producer.py",
-            "fragment_shower": "fragments/fragment_Run3Summer24wmLHEGS_hhh_dl_c3_0_d4_0.py",
-        }
+def init_directories(cfg: dict):
 
     # Create project directory
     create_project_dir(cfg)
@@ -85,14 +64,12 @@ def init(args: argparse.Namespace) -> dict:
                 f"\n{cfg[key]} is not a regular file\nAborting"
             )
 
-    return cfg
-
 
 def get_run_script_local(cfg: dict) -> str:
     projectdir = cfg["projectdir"]
     exe        = cfg["campaigndir"]/"run.sh"
     fragment   = cfg["fragment"]
-    stub       = cfg["name"]
+    stub       = cfg["sample"]
     pufile     = cfg["campaigndir"]/"pileupinput.dat"
 
     script = f'echo "Changing to {projectdir}"\n'
@@ -105,7 +82,7 @@ def get_run_script_local(cfg: dict) -> str:
 def get_run_script_condor(cfg: dict) -> str:
     projectdir  = cfg["projectdir"]
     exe         = "crun.py"
-    stub        = cfg["name"]
+    stub        = cfg["sample"]
     fragment    = cfg["fragment"]
     campaign    = cfg["campaign"]
     mem         = cfg["mem"]
@@ -131,6 +108,19 @@ def get_run_script_condor(cfg: dict) -> str:
     return script
 
 
+def store_config(cfg: dict):
+    """ Store configuration as yaml file"""
+    with open(cfg["projectdir"]/"config.yaml", "w") as f:
+        cfg_out = {}
+        for key,val in cfg.items():
+            if type(val) is str or type(val) is int:
+                cfg_out[key] = val
+            else:
+                cfg_out[key] = str(val)
+        yaml.safe_dump(cfg_out, f)
+
+
+
 def pprint(text: str, is_list_item: bool=False):
     indent1 = "- " if is_list_item else ""
     indent2 = "  " if is_list_item else ""
@@ -143,31 +133,25 @@ def pprint(text: str, is_list_item: bool=False):
         break_on_hyphens=True     # allow breaking on hyphens
     )
     print(wrapped)
-        
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Prepare sample production scripts."
-    )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--config", type=str,
-        help="YAML config file"
-    )
-    group.add_argument(
-        "--sample", type=str,
-        help="Name of the sample to prepare"
-    )
-    args = parser.parse_args()
 
+def run(cfg: dict):
+    """Prepare single sample"""
+
+    # Validate that all config parameters are set
+    for key in ["sample", "campaign", "nevents", "nevents_job", "njobs_chunk", "mem", "job_flavour", "gridpack_placeholder_str", "gridpack", "fragment_lhe_producer", "fragment_shower"]:
+        if key not in cfg.keys():
+            raise KeyError(
+                f"Config parameter '{key}' missing. Aborting"
+            )
+    
     # Initialize
-    pprint(f"Preparing sample production for '{args.sample}'")
-    cfg = init(args)
-    pprint(f"sample     : {cfg['name']}", is_list_item=True)
+    pprint(f"Preparing sample production for '{cfg['sample']}'")
+    init_directories(cfg)
+    pprint(f"sample     : {cfg['sample']}", is_list_item=True)
     pprint(f"campaign   : {cfg['campaign']}", is_list_item=True)
     pprint(f"gridpack   : {cfg['gridpack']}", is_list_item=True)
     pprint(f"shower     : {cfg['fragment_shower']}", is_list_item=True)
-
     
     # Prepare fragment
     # Read in templates as text and set gridpack location
@@ -183,7 +167,6 @@ def main():
     fragment = cfg["projectdir"]/"fragment.py"
     fragment.write_text(str_fragment, encoding="utf-8")
     cfg["fragment"] = fragment
-
     
     # Write local run script
     run_script_local = cfg["projectdir"]/"run_local.sh"
@@ -192,23 +175,92 @@ def main():
     run_script_condor = cfg["projectdir"]/"run_condor.sh"
     run_script_condor.write_text( get_run_script_condor(cfg) )
 
-
     # Store configuration
-    with open(cfg["projectdir"]/"config.yaml", "w") as f:
-        cfg_out = {}
-        for key,val in cfg.items():
-            if type(val) is str or type(val) is int:
-                cfg_out[key] = val
-            else:
-                cfg_out[key] = str(val)
-        yaml.safe_dump(cfg_out, f)
-    
+    store_config(cfg)
     
     # End
     pprint("\nDone")
-    pprint(f"Prepared project directory {cfg['projectdir']}")
-    pprint(f"Execute test job with 'source {run_script_local}'  (You may need to start first a Singularity session with the appropriate architecture, e.g. 'cmssw-el8' for Run3 samples)", is_list_item=True)
-    pprint(f"Submit production to condor with 'source {run_script_condor}'", is_list_item=True)
+    pprint(f"Prepared project directory '{cfg['projectdir'].relative_to(cfg['topdir'])}'")
+    pprint(f"Execute test job with 'source {run_script_local.relative_to(cfg['topdir'])}'  (You may need to start first a Singularity session with the appropriate architecture, e.g. 'cmssw-el8' for Run3 samples)", is_list_item=True)
+    pprint(f"Submit production to condor with 'source {run_script_condor.relative_to(cfg['topdir'])}'", is_list_item=True)
+    print("")
+
+    
+
+def main():
+    
+    parser = argparse.ArgumentParser(
+        description="Prepare sample production scripts."
+    )
+    parser.add_argument(
+        "--config", type=str,
+        help="YAML config file"
+    )
+    parser.add_argument(
+        "--gridpacks", type=str,
+        help="YAML file with list of 'sample: gridpack' pairs for multi-sample project"
+    )
+    parser.add_argument(
+        "--sample", type=str,
+        help="Name of the sample to prepare"
+    )
+    parser.add_argument(
+        "--gridpack", type=str,
+        help="Name of gridpack"
+    )
+    parser.add_argument(
+        "--fragment", type=str,
+        help="Name of shower fragment"
+    )
+    parser.add_argument(
+        "--nevents", type=int,
+        help="Number of events"
+    )
+    args = parser.parse_args()
+
+    # Base config
+    if args.config:
+        # load config file
+        with open(Path(args.config), "r") as f:
+            cfg = yaml.safe_load(f)
+    else:
+        # create default config
+        cfg = {
+            "sample": "test",
+            "campaign": "Run3Summer24wmLHEGS",
+            "nevents": 10000,
+            "nevents_job": 500,
+            "njobs_chunk": 1000,
+            "mem": 1250,
+            "job_flavour": "workday",
+            "gridpack_placeholder_str": "GRIDPACK",
+            "gridpack": "/afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz",
+            "fragment_lhe_producer": "fragments/fragment_lhe_producer.py",
+            "fragment_shower": "fragments/fragment_Run3Summer24wmLHEGS_hhh_dl_c3_0_d4_0.py",
+        }
+
+    # Set (or overwrite) further config arguments if specified
+    def set_cfg_argument(cfg, key, value):
+        if value is not None:
+            cfg[key] = value
+    set_cfg_argument(cfg, "sample", args.sample)
+    set_cfg_argument(cfg, "gridpack", args.gridpack)
+    set_cfg_argument(cfg, "fragment_shower", args.fragment)
+    set_cfg_argument(cfg, "nevents", args.nevents)
+
+    # Run
+    if args.gridpacks:
+        # set up multi-sample config
+        with open(Path(args.gridpacks), "r") as f:
+            samples = yaml.safe_load(f)
+            print("Preparing sample production for multiple gridpacks\n")
+            for sample,gridpack in samples.items():
+                cfg["sample"] = sample
+                cfg["gridpack"] = gridpack
+                run(cfg)
+    else:
+        # process config for single sample
+        run(cfg)
     
     return 0
 
@@ -220,6 +272,9 @@ if __name__ == "__main__":
         print(e, file=sys.stderr)
         exit_code = 1
     except FileExistsError as e:
+        print(e, file=sys.stderr)
+        exit_code = 1
+    except KeyError as e:
         print(e, file=sys.stderr)
         exit_code = 1
     sys.exit(exit_code)

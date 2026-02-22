@@ -1,4 +1,4 @@
-name: test
+sample: test
 campaign: Run3Summer24wmLHEGS
 nevents: 1000000
 nevents_job: 500
