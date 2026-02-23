@@ -45,7 +45,7 @@ def init_directories(cfg: dict):
     cfg["campaigndir"] = cfg["topdir"]/Path("campaigns")/Path(cfg["campaign"])
     
     # List of all paths and files
-    path_keys = ["topdir", "projectdir", "campaigndir", "gridpack", "fragment_lhe_producer", "fragment_shower"]
+    path_keys = ["topdir", "projectdir", "campaigndir", "gridpack", "fragment_shower"]
     file_keys = path_keys[3:]
     
     # Make file names absolute path objects
@@ -104,6 +104,7 @@ def get_run_script_condor(cfg: dict) -> str:
             # job output directories are named by timestamp
             # with minute granularity: need to add at least
             # 1 minute to get a different output dir name
+            script = script+f"Waiting for 60 seconds before submitting next chunk"
             script = script+f"sleep 60\n"
         script = script+f"{exe} {stub} {fragment} {campaign} --nevents_job {nevents_job} --njobs {njobs_chunk} --seed_offset {seed_offset} --keepNANO --env --mem {mem} --max_nthreads 1 --job_flavour {job_flavour}\n"
     script = script+"cd $TOPDIR\n"
@@ -142,7 +143,7 @@ def run(cfg: dict):
     """Prepare single sample"""
 
     # Validate that all config parameters are set
-    for key in ["sample", "campaign", "nevents", "nevents_job", "njobs_chunk", "mem", "job_flavour", "gridpack_placeholder_str", "gridpack", "fragment_lhe_producer", "fragment_shower"]:
+    for key in ["sample", "campaign", "nevents", "nevents_job", "njobs_chunk", "mem", "job_flavour", "gridpack_placeholder_str", "gridpack", "fragment_shower"]:
         if key not in cfg.keys():
             raise KeyError(
                 f"Config parameter '{key}' missing. Aborting"
@@ -157,15 +158,27 @@ def run(cfg: dict):
     pprint(f"shower     : {cfg['fragment_shower']}", is_list_item=True)
     
     # Prepare fragment
-    # Read in templates as text and set gridpack location
-    str_fragment_lhe_producer = cfg["fragment_lhe_producer"].read_text(encoding="utf-8")
-    str_fragment_lhe_producer = str_fragment_lhe_producer.replace(
+    # First, add loading of gridpack
+    str_fragment = f"""
+import FWCore.ParameterSet.Config as cms
+
+externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
+    args = cms.vstring(GRIDPACK),
+    nEvents = cms.untracked.uint32(5000),
+    generateConcurrently = cms.untracked.bool(False),
+    numberOfParameters = cms.uint32(1),
+    outputFile = cms.string('cmsgrid_final.lhe'),
+    scriptName = cms.FileInPath('GeneratorInterface/LHEInterface/data/run_generic_tarball_cvmfs.sh')
+)
+
+
+    """
+    str_fragment = str_fragment.replace(
         cfg["gridpack_placeholder_str"],
         f'"{str(cfg["gridpack"])}"'
     )
-    str_fragment_shower = cfg["fragment_shower"].read_text(encoding="utf-8")
-    # Combine to full fragment as text
-    str_fragment = str_fragment_lhe_producer + "\n\n" + str_fragment_shower
+    # Second, add shower settings
+    str_fragment = str_fragment + cfg["fragment_shower"].read_text(encoding="utf-8")
     # Store fragment in output file and path to fragment in cfg
     fragment = cfg["projectdir"]/"fragment.py"
     fragment.write_text(str_fragment, encoding="utf-8")
@@ -238,7 +251,6 @@ def main():
             "job_flavour": "workday",
             "gridpack_placeholder_str": "GRIDPACK",
             "gridpack": "/afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz",
-            "fragment_lhe_producer": "fragments/fragment_lhe_producer.py",
             "fragment_shower": "fragments/fragment_Run3Summer24wmLHEGS_hhh_dl_c3_0_d4_0.py",
         }
 

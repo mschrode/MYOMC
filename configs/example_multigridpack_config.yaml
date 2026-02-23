@@ -1,2 +1,2 @@
-point1: /afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
-point2: /afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
+point1: /eos/user/m/mschrode/mcproduction/gridpacks/Run3/GF_HHH/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
+point2: /eos/user/m/mschrode/mcproduction/gridpacks/Run3/GF_HHH/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz

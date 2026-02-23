@@ -25,5 +25,10 @@ See the test scripts for syntax examples.
 
 Prepare a larger sample campaign:
 ```
-python3 prepare_sample_production.py --config example_config.yaml
+python3 prepare_sample_production.py --config configs/example_config.yaml
 ```
+or with multiple gridpacks and otherwise same settings (e.g. for different signal parameter settings)
+```
+python3 prepare_sample_production.py --config configs/example_config.yaml --gridpacks configs/example_multigridpack_config.yaml
+```
+See the examples in `configs` for the configuration options.

@@ -1,0 +1,8 @@
+campaign: Run3Summer24wmLHEGS
+nevents: 1000000
+nevents_job: 500
+njobs_chunk: 1000
+mem: 1250
+job_flavour: workday
+gridpack_placeholder_str: GRIDPACK
+fragment_shower: fragments/fragment_Run3Summer24wmLHEGS_AZH.py

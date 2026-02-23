@@ -6,6 +6,5 @@ njobs_chunk: 1000
 mem: 1250
 job_flavour: workday
 gridpack_placeholder_str: GRIDPACK
-gridpack: /afs/cern.ch/user/m/mschrode/work/MYOMC__/test/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
-fragment_lhe_producer: fragments/fragment_lhe_producer.py
+gridpack: /eos/user/m/mschrode/mcproduction/gridpacks/Run3/GF_HHH/GF_HHH_c3_0_d4_0_el8_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
 fragment_shower: fragments/fragment_Run3Summer24wmLHEGS_hhh_dl_c3_0_d4_0.py
