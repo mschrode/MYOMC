@@ -101,7 +101,10 @@ def get_run_script_condor(cfg: dict) -> str:
     for i in range(nchunks):
         seed_offset = i*njobs_chunk
         if i>0:
-            script = script+f"sleep 5\n"
+            # job output directories are named by timestamp
+            # with minute granularity: need to add at least
+            # 1 minute to get a different output dir name
+            script = script+f"sleep 60\n"
         script = script+f"{exe} {stub} {fragment} {campaign} --nevents_job {nevents_job} --njobs {njobs_chunk} --seed_offset {seed_offset} --keepNANO --env --mem {mem} --max_nthreads 1 --job_flavour {job_flavour}\n"
     script = script+"cd $TOPDIR\n"
     
