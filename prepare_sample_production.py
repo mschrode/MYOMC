@@ -104,7 +104,7 @@ def get_run_script_condor(cfg: dict) -> str:
             # job output directories are named by timestamp
             # with minute granularity: need to add at least
             # 1 minute to get a different output dir name
-            script = script+f"Waiting for 60 seconds before submitting next chunk"
+            script = script+f'echo "Waiting for 60 seconds before submitting next chunk"\n'
             script = script+f"sleep 60\n"
         script = script+f"{exe} {stub} {fragment} {campaign} --nevents_job {nevents_job} --njobs {njobs_chunk} --seed_offset {seed_offset} --keepNANO --env --mem {mem} --max_nthreads 1 --job_flavour {job_flavour}\n"
     script = script+"cd $TOPDIR\n"
@@ -172,7 +172,7 @@ externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
 )
 
 
-    """
+"""
     str_fragment = str_fragment.replace(
         cfg["gridpack_placeholder_str"],
         f'"{str(cfg["gridpack"])}"'
